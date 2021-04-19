@@ -2,3 +2,6 @@ test.bench
 circs/**/*
 **/*.txt
 options
+hope.warning
+log
+faults
