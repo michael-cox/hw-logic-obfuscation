@@ -18,18 +18,26 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def get_hope_output(netlist):
+def get_hope_faults(netlist):
     hope_proc = subprocess.run(HOPE_OPTS + [netlist], capture_output=True)
     if hope_proc.stderr:
         error(hope_proc.stderr.decode('utf-8'))
         if 'hope.warning' in os.listdir():
             with open('hope.warning', 'r') as data:
                 warning = data.read()
-                print(warning.strip())
+                error(warning.strip())
             os.remove('hope.warning')
-    return hope_proc.stdout
+
+    faults = ''
+    if 'faults' in os.listdir():
+        with open('faults', 'r') as data:
+            faults = data.read()
+        os.remove('faults')
+    if faults:
+        return faults
+    error('Hope found no faults.')
+    exit(-1)
 
 if __name__ == '__main__':
     args = parse_args()
-    hope_out = get_hope_output(args.input_netlist)
-    print(hope_out.decode('utf-8'))
+    hope_out = get_hope_faults(args.input_netlist)
