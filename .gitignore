@@ -1,2 +1,2 @@
-./test.bench
-./circs/**/*
+test.bench
+circs/**/*
