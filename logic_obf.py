@@ -11,7 +11,7 @@ HOPE_OPTS = ['./hope/hope', '-s', '500', '-r', '10', '-F', 'faults', '-l', 'log'
 
 INPUT_RE = re.compile('^INPUT\((?P<inputs>\w*)\)', flags=re.A | re.M)
 OUTPUT_RE = re.compile('^OUTPUT\((?P<outputs>\w*)\)', flags=re.A | re.M)
-OP_RE = re.compile('^((\w*) = (\w*)\((\w*),\s(\w*)\))', flags = re.M | re.A)
+OP_RE = re.compile('^((\w*) = (\w*)\((.*)\))', flags = re.M | re.A)
 
 class Bench:
     def __init__(self, inputs, outputs, signals, ops):
