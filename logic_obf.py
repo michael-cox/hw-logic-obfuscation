@@ -7,7 +7,7 @@ import os
 import re
 
 # -s 500 -r 10 -F faults -l log -U undetected_faults
-HOPE_OPTS = ['./hope/hope', '-s', '500', '-r', '10', '-F', 'faults', '-l', 'log', '-U', 'undetected_faults']
+HOPE_OPTS = ['./hope/hope', '-s', '500', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
 
 INPUT_RE = re.compile('^INPUT\((?P<inputs>\w*)\)', flags=re.A | re.M)
 OUTPUT_RE = re.compile('^OUTPUT\((?P<outputs>\w*)\)', flags=re.A | re.M)
@@ -15,6 +15,11 @@ OP_RE = re.compile('^(\w*)\s*=\s*(\w*)\((.*)\)', flags = re.M | re.A)
 
 LOGIC_OP_STR = '{} = {}({})'
 
+# LogicOp - class containing a testbench style logic operation
+# ----------
+# assignee - gate that is being assigned to
+# operation - string of the operation (e.g. and, nand)
+# operands - list of gate parameters
 class LogicOp:
     def __init__(self, assignee, operation, operands):
         self.assignee = assignee
@@ -23,6 +28,12 @@ class LogicOp:
     def __repr__(self):
         return LOGIC_OP_STR.format(self.assignee, self.operation, ', '.join(self.operands))
 
+# Bench - class to represent bench netlist
+# ----------
+# inputs - list of input gates
+# outputs - list of output gates
+# signals - list of signal gates
+# ops - list of LogicOp's in order
 class Bench:
     @staticmethod
     def from_file(netlist):
@@ -53,9 +64,14 @@ class Bench:
         print('OPS:')
         for op in self.ops: print(op)
 
+    # TODO: function for converting to verilog
+    # TODO: function for representing as bench
+
+# error - function to print errors
 def error(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+# parse_args - function to parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser(description='Process command line arguments')
     parser.add_argument('input_netlist', help='the input netlist .bench file')
@@ -63,6 +79,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+# get_hop_faults - runs hope and returns the fault file as a string
 def get_hope_faults(netlist):
     hope_proc = subprocess.run(HOPE_OPTS + [netlist], capture_output=True)
     if hope_proc.stderr:
@@ -85,6 +102,8 @@ def get_hope_faults(netlist):
 
 if __name__ == '__main__':
     args = parse_args()
-    # hope_out = get_hope_faults(args.input_netlist)
     bench = Bench.from_file(args.input_netlist)
     bench.debug_print()
+
+    hope_out = get_hope_faults(args.input_netlist)
+    print(hope_out)
