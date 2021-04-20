@@ -11,20 +11,47 @@ HOPE_OPTS = ['./hope/hope', '-s', '500', '-r', '10', '-F', 'faults', '-l', 'log'
 
 INPUT_RE = re.compile('^INPUT\((?P<inputs>\w*)\)', flags=re.A | re.M)
 OUTPUT_RE = re.compile('^OUTPUT\((?P<outputs>\w*)\)', flags=re.A | re.M)
-OP_RE = re.compile('^((\w*) = (\w*)\((.*)\))', flags = re.M | re.A)
+OP_RE = re.compile('^(\w*)\s*=\s*(\w*)\((.*)\)', flags = re.M | re.A)
+
+LOGIC_OP_STR = '{} = {}({})'
+
+class LogicOp:
+    def __init__(self, assignee, operation, operands):
+        self.assignee = assignee
+        self.operation = operation
+        self.operands = operands
+    def __repr__(self):
+        return LOGIC_OP_STR.format(self.assignee, self.operation, ', '.join(self.operands))
 
 class Bench:
+    @staticmethod
+    def from_file(netlist):
+        with open(netlist, 'r') as data:
+            text = data.read()
+        inputs = INPUT_RE.findall(text)
+        outputs = OUTPUT_RE.findall(text)
+        op_full_match = OP_RE.findall(text)
+        signals = [ tup[0] for tup in op_full_match if tup[0] not in outputs ]
+        ops = []
+        for op_reg in op_full_match:
+            operands = op_reg[2]
+            operands = re.sub(r'\s+', '', operands)
+            ops.append(LogicOp(op_reg[0], op_reg[1], operands.split(',')))
+    
+        return Bench(inputs, outputs, signals, ops)
+
     def __init__(self, inputs, outputs, signals, ops):
         self.inputs = inputs
         self.outputs = outputs
         self.signals = signals
         self.ops = ops
+
     def debug_print(self):
         print('INPUTS: {}'.format(str(self.inputs)))
         print('OUTPUTS: {}'.format(str(self.outputs)))
         print('SIGNALS: {}'.format(str(self.signals)))
         print('OPS:')
-        for line in self.ops: print(line)
+        for op in self.ops: print(op)
 
 def error(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -56,18 +83,8 @@ def get_hope_faults(netlist):
     error('Hope found no faults.')
     exit(-1)
 
-def read_bench(netlist):
-    with open(netlist, 'r') as data:
-        text = data.read()
-    inputs = INPUT_RE.findall(text)
-    outputs = OUTPUT_RE.findall(text)
-    op_full_match = OP_RE.findall(text)
-    signals = [ tup[1] for tup in op_full_match if tup[1] not in outputs ]
-    ops = [ tup[0] for tup in op_full_match ]
-    return Bench(inputs, outputs, signals, ops)
-
 if __name__ == '__main__':
     args = parse_args()
     # hope_out = get_hope_faults(args.input_netlist)
-    bench = read_bench(args.input_netlist)
+    bench = Bench.from_file(args.input_netlist)
     bench.debug_print()
