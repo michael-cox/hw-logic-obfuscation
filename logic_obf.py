@@ -172,8 +172,12 @@ def error(*args, **kwargs):
 def parse_args():
     parser = argparse.ArgumentParser(description='Process command line arguments')
     parser.add_argument('input_netlist', help='the input netlist .bench file')
-    parser.add_argument('output_verilog', help='the output verilog .v file')
+    parser.add_argument('-V', '--verilog', dest='verilog_out', help='specify an output verilog .v file')
+    parser.add_argument('-b', '--bench', dest='bench_out', help='specify an output netlist .bench file')
     args = parser.parse_args()
+    if 'verilog_out' not in args and 'bench_out' not in args:
+        error('At least one output file must be specified.')
+        parser.print_help()
     return args
 
 # get_hop_faults - runs hope and returns the fault file as a string
