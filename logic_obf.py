@@ -219,6 +219,15 @@ def get_hope_faults(netlist):
     error('Hope found no faults.')
     exit(-1)
 
+def get_hamming_distance(correct_output, cipher_outputs):
+    big_sum = 0
+    for cipher_output in cipher_outputs:
+        little_sum = 0
+        for correct_bit, cipher_bit in zip(correct_output, cipher_output):
+            little_sum += abs(correct_output - cipher_output)
+        big_sum += little_sum
+    return sum_diff / (len(correct_output) * len(cipher_outputs))
+
 if __name__ == '__main__':
     args = parse_args()
 
