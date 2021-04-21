@@ -31,7 +31,8 @@ class LogicOp:
             'NOT' : 2,
             'NOR' : 3,
             'NAND' : 4,
-            'DFF' : 5
+            'DFF' : 5,
+            'BUF' : 6
             }
     __to_bench_dict = dict((v,k) for k,v in __to_op_dict.items())
     __to_verilog_dict = {
@@ -104,6 +105,7 @@ class Bench:
             operands = op_reg[2]
             operands = re.sub(r'\s+', '', operands)
             new_op = LogicOp(op_reg[0], op_reg[1], operands.split(','))
+            includes_dff = False
             if new_op.operation == 5:
                 includes_dff = True
             ops.append(new_op)
@@ -176,6 +178,7 @@ class VerilogModule:
         inputs += [s.replace('gat','') for s in bench.inputs]
         outputs = [s.replace('gat','') for s in bench.outputs]
         wires = [s.replace('gat','') for s in bench.signals]
+        ops = [op for op in bench.ops if op.operation != 6]
 
         return VerilogModule(bench.name, inputs, outputs, wires, bench.ops)
 
@@ -218,11 +221,14 @@ def get_hope_faults(netlist):
 
 if __name__ == '__main__':
     args = parse_args()
+
     bench = Bench.from_file(args.input_netlist)
-    bench.write_to_file(args.bench_out)
+    if args.bench_out:
+        bench.write_to_file(args.bench_out)
 
     vmod = VerilogModule.from_bench(bench)
-    vmod.write_to_file(args.verilog_out)
+    if args.verilog_out:
+        vmod.write_to_file(args.verilog_out)
     
 
     # print(hope_out)
