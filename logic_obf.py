@@ -85,6 +85,10 @@ class LogicOp:
 # signals - list of signal gates
 # ops - list of LogicOp's in order
 class Bench:
+
+    input_format = 'INPUT({gate})'
+    output_format = 'OUTPUT({gate})'
+
     @staticmethod
     def from_file(netlist):
         with open(netlist, 'r') as data:
@@ -113,6 +117,17 @@ class Bench:
         self.signals = signals
         self.ops = ops
         self.includes_dff = includes_dff
+
+    def write_to_file(self, file):
+        with open(file, 'w') as f:
+            for gate in self.inputs:
+                print(Bench.input_format.format(gate=gate), file=f)
+            for gate in self.outputs:
+                print(Bench.output_format.format(gate=gate), file=f)
+            print(file=f)
+            for op in self.ops:
+                print(op.to_bench(), file=f)
+
 
     def debug_print(self):
         print('INPUTS: {}'.format(str(self.inputs)))
@@ -204,10 +219,10 @@ def get_hope_faults(netlist):
 if __name__ == '__main__':
     args = parse_args()
     bench = Bench.from_file(args.input_netlist)
-    bench.debug_print()
+    bench.write_to_file(args.bench_out)
 
     vmod = VerilogModule.from_bench(bench)
-    vmod.write_to_file(args.output_verilog)
+    vmod.write_to_file(args.verilog_out)
     
 
     # print(hope_out)
