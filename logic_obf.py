@@ -180,7 +180,7 @@ class VerilogModule:
         wires = [s.replace('gat','') for s in bench.signals]
         ops = [op for op in bench.ops if op.operation != 6]
 
-        return VerilogModule(bench.name, inputs, outputs, wires, bench.ops)
+        return VerilogModule(bench.name, inputs, outputs, wires, ops)
 
 # error - function to print errors
 def error(*args, **kwargs):
