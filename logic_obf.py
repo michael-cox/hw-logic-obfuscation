@@ -79,6 +79,7 @@ class Bench:
         print('OPS:')
         for op in self.ops: print(op)
 
+    # TODO: refactor to a staticmethod in a verilog class, this is a messy
     def to_verilog(self, outfile):
         with open(outfile, 'w') as verilog_file:
             included_dff_gates = []
