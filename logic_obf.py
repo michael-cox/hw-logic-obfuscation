@@ -188,6 +188,7 @@ class Bench:
         self.signals = signals
         self.ops = ops
         self.includes_dff = includes_dff
+        self.changed_signals = []
         self.key = ''
 
     def write_to_file(self, file):
@@ -228,10 +229,9 @@ class Bench:
 
             new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
             
-            print(wire)
             #wire = [G16, G22]
             index_to_insert = -1
-            if len(wire) >= 2:
+            if len(wire) >= 2 and wire[0] not in self.changed_signals:
                 for op_index, op in enumerate(self.ops):
                     if op.assignee == wire[1]:
                         index = op.operands.index(wire[0])
@@ -242,6 +242,7 @@ class Bench:
                 for op_index, op in enumerate(self.ops):
                     if wire[0] in op.operands:
                         index = op.operands.index(wire[0])
+                        self.changed_signals.append(wire[0])
                         op.operands[index] = new_signal
                         if index_to_insert == -1:
                             index_to_insert = op_index
