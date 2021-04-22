@@ -199,16 +199,15 @@ class Bench:
                 print(op.to_bench(), file=f)
 
     def insert_key_gates(self, wires, num_keybits, stuck_at):
-        random.seed(a=None, version=2)
         if len(wires) < num_keybits:
             error('Invalid number of key bits')
 
         for i in range(num_keybits):
 
             wire = wires[i].split("->", 1)
-            key_input = 'K' + len(self.key) + "gat"
+            key_input = 'K' + str(len(self.key)) + "gat"
             self.inputs.append(key_input)
-            new_signal = 'GA' + str(i) + "gat"
+            new_signal = 'GA' + str(len(self.signals)) + "gat"
             self.signals.append(new_signal)
 
             new_gate_op = "XOR" if random.randrange(2) == 1 else "XNOR"
@@ -356,9 +355,12 @@ def get_hamming_distance(correct_output, cipher_outputs):
 
 if __name__ == '__main__':
     args = parse_args()
+    random.seed()
 
     bench = Bench.from_file(args.input_netlist)
     fault = Fault.get_faults(bench, args.input_netlist)
+    bench.insert_key_gates(fault.atZeroFaults, 1, 0)
+    bench.insert_key_gates(fault.atOneFaults, 1, 1)
     print('key = {}'.format(bench.key))
     if args.bench_out:
         bench.write_to_file(args.bench_out)
