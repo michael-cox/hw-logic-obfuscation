@@ -425,6 +425,9 @@ if __name__ == '__main__':
     print('Best Hamming @ {} key bits: {}'.format(sorted_hammings[0], hammings[sorted_hammings[0]]))
     print('key = {}'.format(keys[sorted_hammings[0]]))
 
+    bench.insert_key_gates(fault.atZeroFaults, math.floor(num_keybits/2), 0)
+    bench.insert_key_gates(fault.atOneFaults, math.ceil(num_keybits/2), 1)
+
     vmod = VerilogModule.from_bench(bench)
     if args.verilog_out:
         vmod.write_to_file(args.verilog_out)
