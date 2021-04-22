@@ -33,7 +33,9 @@ class LogicOp:
             'NOR' : 3,
             'NAND' : 4,
             'DFF' : 5,
-            'BUF' : 6
+            'BUF' : 6,
+            'XOR' : 7,
+            'XNOR' : 8
             }
     __to_bench_dict = dict((v,k) for k,v in __to_op_dict.items())
     __to_verilog_dict = {
@@ -42,7 +44,9 @@ class LogicOp:
             4 : 'ND',
             3 : 'NR',
             0 : 'AN',
-            1 : 'OR'
+            1 : 'OR',
+            7 : 'XOR',
+            8 : 'XNOR'
             }
 
     def __init__(self, assignee, operation, operands):
@@ -131,24 +135,42 @@ class Bench:
             for op in self.ops:
                 print(op.to_bench(), file=f)
 
-    def insert_key_gates(self, wires)
+    def insert_key_gates(self, wires, num_keybits):
         random.seed(a=None, version=2)
-        for i in range(len(wires)):
+        if len(wires) < num_keybits:
+            error('Invalid number of key bits')
+
+        for i in range(num_keybits):
+
             wire = wires[i].split("->", 1)
-            insertion_name = 'K' + str(i) + "gat"
-            rand_num = random.rand(2)
-            new_gate = "XOR" if rand_num == 1 else "XNOR"
-            new_op = LogicOp(insertion_name, new_gate, [wire[1], insertion_name])
-            first_index = -1
+            key_input = 'K' + str(i) + "gat"
+            self.inputs.append(key_input)
+            new_signal = 'GA' + str(i) + "gat"
+            self.signals.append(new_signal)
+
+            new_gate_op = "XOR" if random.randrange(2) == 1 else "XNOR"
+            new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
+
+            #wire = [G16, G22]
+            index_to_insert = -1
             if len(wire) >= 2:
-               for op in self.ops:
-                   if op.assignee == wire[0]:
-                       if wire[1] in op.operands:
-                           index = op.operands.index(wire[1])
-                           if first_index = -1:
-                               first_index = 0
-                               self.ops.insert(new_op)
-                           op.operands[index] = insertion_name
+                for op_index, op in enumerate(self.ops):
+                    if op.assignee == wire[1]:
+                        index = op.operands.index(wire[0])
+                        op.operands[index] = new_signal
+                        if index_to_insert == -1:
+                            index_to_insert = op_index
+            else:
+                for op_index, op in enumerate(self.ops):
+                    if wire[0] in op.operands:
+                        index = op.operands.index(wire[0])
+                        op.operands[index] = new_signal
+                        if index_to_insert == -1:
+                            index_to_insert = op_index
+            if(index_to_insert != -1):
+                self.ops.insert(index_to_insert, new_op)
+
+
 
 
         # insert new key gates as inputs
@@ -261,6 +283,10 @@ if __name__ == '__main__':
     args = parse_args()
 
     bench = Bench.from_file(args.input_netlist)
+
+    wires = ['G11gat', 'G16gat->G22gat']
+    num_keybits = 2
+    bench.insert_key_gates(wires, num_keybits)
     if args.bench_out:
         bench.write_to_file(args.bench_out)
 
