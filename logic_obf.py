@@ -6,6 +6,7 @@ import sys
 import os
 import re
 import pathlib
+import random
 
 # -s 500 -r 10 -F faults -l log -U undetected_faults
 HOPE_OPTS = ['./hope/hope', '-s', '500', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
@@ -129,6 +130,31 @@ class Bench:
             print(file=f)
             for op in self.ops:
                 print(op.to_bench(), file=f)
+
+    def insert_key_gates(self, wires)
+        random.seed(a=None, version=2)
+        for i in range(len(wires)):
+            wire = wires[i].split("->", 1)
+            insertion_name = 'K' + str(i) + "gat"
+            rand_num = random.rand(2)
+            new_gate = "XOR" if rand_num == 1 else "XNOR"
+            new_op = LogicOp(insertion_name, new_gate, [wire[1], insertion_name])
+            first_index = -1
+            if len(wire) >= 2:
+               for op in self.ops:
+                   if op.assignee == wire[0]:
+                       if wire[1] in op.operands:
+                           index = op.operands.index(wire[1])
+                           if first_index = -1:
+                               first_index = 0
+                               self.ops.insert(new_op)
+                           op.operands[index] = insertion_name
+
+
+        # insert new key gates as inputs
+        # create new wires for each insertion
+        # randomly select an XOR or XNOR gate for insertion
+
 
 
     def debug_print(self):
