@@ -367,16 +367,13 @@ def get_hamming_distance(correct_output, cipher_outputs):
 # netlist = path to netlist
 # key = the valid key
 def test_hamming(netlist, input_bits, correctKey):
-    inputValue = random.randrange(0, (2 ** input_bits) - 1)
+    inputValue = random.randrange(0, (2 ** (input_bits)) - 1)
     inputString = bin(inputValue).replace("0b", "").zfill(input_bits)
-
-    # generate set of keys
-    keys = { correctKey }
 
     testFile = open("testbench", "w")
     testFile.write("1: " + inputString + correctKey + "\n")
 
-    for i in range(2, 200):
+    for i in range(2, 2500):
         keyValue = random.randrange(0, (2 ** len(correctKey)) - 1)
         keyString = bin(keyValue).replace("0b", "").zfill(len(correctKey))
         testFile.write(str(i) + ": " + inputString + keyString + "\n")
@@ -414,7 +411,7 @@ if __name__ == '__main__':
     print('key = {}'.format(bench.key))
     if args.bench_out:
         bench.write_to_file(args.bench_out)
-        hammingResult = test_hamming(args.bench_out, len(bench.inputs), bench.key)
+        hammingResult = test_hamming(args.bench_out, len(bench.inputs) - len(bench.key), bench.key)
         print("HAMMING = " + str(hammingResult))
 
     vmod = VerilogModule.from_bench(bench)
