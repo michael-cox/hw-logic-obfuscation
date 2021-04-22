@@ -6,7 +6,11 @@ import sys
 import os
 import re
 import pathlib
+<<<<<<< HEAD
 import operator
+=======
+import random
+>>>>>>> insert_key_gates
 
 # -r 10 -F faults -l log -N
 HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
@@ -33,7 +37,9 @@ class LogicOp:
             'NOR' : 3,
             'NAND' : 4,
             'DFF' : 5,
-            'BUF' : 6
+            'BUF' : 6,
+            'XOR' : 7,
+            'XNOR' : 8
             }
     __to_bench_dict = dict((v,k) for k,v in __to_op_dict.items())
     __to_verilog_dict = {
@@ -42,7 +48,9 @@ class LogicOp:
             4 : 'ND',
             3 : 'NR',
             0 : 'AN',
-            1 : 'OR'
+            1 : 'OR',
+            7 : 'XOR',
+            8 : 'XNOR'
             }
 
     def __init__(self, assignee, operation, operands):
@@ -181,6 +189,7 @@ class Bench:
         self.signals = signals
         self.ops = ops
         self.includes_dff = includes_dff
+        self.key = ''
 
     def write_to_file(self, file):
         with open(file, 'w') as f:
@@ -191,6 +200,61 @@ class Bench:
             print(file=f)
             for op in self.ops:
                 print(op.to_bench(), file=f)
+
+    def insert_key_gates(self, wires, num_keybits, stuck_at):
+        random.seed(a=None, version=2)
+        if len(wires) < num_keybits:
+            error('Invalid number of key bits')
+
+        for i in range(num_keybits):
+
+            wire = wires[i].split("->", 1)
+            key_input = 'K' + len(self.key) + "gat"
+            self.inputs.append(key_input)
+            new_signal = 'GA' + str(i) + "gat"
+            self.signals.append(new_signal)
+
+            new_gate_op = "XOR" if random.randrange(2) == 1 else "XNOR"
+            if stuck_at == 0:
+                if new_gate_op == "XOR":
+                    self.key += '0'
+                else:
+                    self.key += '1'
+            elif stuck_at == 1:
+                if new_gate_op == "XOR":
+                    self.key += '1'
+                else:
+                    self.key += '0'
+
+
+            new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
+
+            #wire = [G16, G22]
+            index_to_insert = -1
+            if len(wire) >= 2:
+                for op_index, op in enumerate(self.ops):
+                    if op.assignee == wire[1]:
+                        index = op.operands.index(wire[0])
+                        op.operands[index] = new_signal
+                        if index_to_insert == -1:
+                            index_to_insert = op_index
+            else:
+                for op_index, op in enumerate(self.ops):
+                    if wire[0] in op.operands:
+                        index = op.operands.index(wire[0])
+                        op.operands[index] = new_signal
+                        if index_to_insert == -1:
+                            index_to_insert = op_index
+            if(index_to_insert != -1):
+                self.ops.insert(index_to_insert, new_op)
+
+
+
+
+        # insert new key gates as inputs
+        # create new wires for each insertion
+        # randomly select an XOR or XNOR gate for insertion
+
 
 
     def debug_print(self):
@@ -298,6 +362,7 @@ if __name__ == '__main__':
 
     bench = Bench.from_file(args.input_netlist)
     fault = Fault.get_faults(bench, args.input_netlist)
+    print('key = {}'.format(bench.key))
     if args.bench_out:
         bench.write_to_file(args.bench_out)
 
