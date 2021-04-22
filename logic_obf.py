@@ -218,9 +218,9 @@ class Bench:
                     self.key += '1'
             elif stuck_at == 1:
                 if new_gate_op == "XOR":
-                    self.key += '1'
-                else:
                     self.key += '0'
+                else:
+                    self.key += '1'
 
 
             new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
