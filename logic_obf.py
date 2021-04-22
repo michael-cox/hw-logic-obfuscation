@@ -227,7 +227,8 @@ class Bench:
 
 
             new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
-
+            
+            print(wire)
             #wire = [G16, G22]
             index_to_insert = -1
             if len(wire) >= 2:
@@ -352,7 +353,7 @@ def get_hamming_distance(correct_output, cipher_outputs):
     for cipher_output in cipher_outputs:
         little_sum = 0
         for correct_bit, cipher_bit in zip(correct_output, cipher_output):
-            little_sum += abs(correct_bit - cipher_bit)
+            little_sum += abs(int(correct_bit,2) - int(cipher_bit,2))
         big_sum += little_sum
     return big_sum / (len(correct_output) * len(cipher_outputs))
 
@@ -406,13 +407,13 @@ if __name__ == '__main__':
 
     bench = Bench.from_file(args.input_netlist)
     fault = Fault.get_faults(bench, args.input_netlist)
-    bench.insert_key_gates(fault.atZeroFaults, 1, 0)
-    bench.insert_key_gates(fault.atOneFaults, 1, 1)
+    bench.insert_key_gates(fault.atZeroFaults, 10, 0)
+    bench.insert_key_gates(fault.atOneFaults, 10, 1)
     print('key = {}'.format(bench.key))
     if args.bench_out:
         bench.write_to_file(args.bench_out)
         hammingResult = test_hamming(args.bench_out, len(bench.inputs), bench.key)
-        print("HAMMING = " + hammingResult)
+        print("HAMMING = " + str(hammingResult))
 
     vmod = VerilogModule.from_bench(bench)
     if args.verilog_out:
