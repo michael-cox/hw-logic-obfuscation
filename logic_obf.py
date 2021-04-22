@@ -124,6 +124,7 @@ class Bench:
         self.signals = signals
         self.ops = ops
         self.includes_dff = includes_dff
+        self.key = ''
 
     def write_to_file(self, file):
         with open(file, 'w') as f:
@@ -135,7 +136,7 @@ class Bench:
             for op in self.ops:
                 print(op.to_bench(), file=f)
 
-    def insert_key_gates(self, wires, num_keybits):
+    def insert_key_gates(self, wires, num_keybits, stuck_at):
         random.seed(a=None, version=2)
         if len(wires) < num_keybits:
             error('Invalid number of key bits')
@@ -143,12 +144,24 @@ class Bench:
         for i in range(num_keybits):
 
             wire = wires[i].split("->", 1)
-            key_input = 'K' + str(i) + "gat"
+            key_input = 'K' + len(self.key) + "gat"
             self.inputs.append(key_input)
             new_signal = 'GA' + str(i) + "gat"
             self.signals.append(new_signal)
 
             new_gate_op = "XOR" if random.randrange(2) == 1 else "XNOR"
+            if stuck_at == 0:
+                if new_gate_op == "XOR":
+                    self.key += '0'
+                else:
+                    self.key += '1'
+            elif stuck_at == 1:
+                if new_gate_op == "XOR":
+                    self.key += '1'
+                else:
+                    self.key += '0'
+
+
             new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
 
             #wire = [G16, G22]
@@ -283,10 +296,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     bench = Bench.from_file(args.input_netlist)
-
-    wires = ['G11gat', 'G16gat->G22gat']
-    num_keybits = 2
-    bench.insert_key_gates(wires, num_keybits)
+    print('key = {}'.format(bench.key))
     if args.bench_out:
         bench.write_to_file(args.bench_out)
 
