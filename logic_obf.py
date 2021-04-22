@@ -6,11 +6,8 @@ import sys
 import os
 import re
 import pathlib
-<<<<<<< HEAD
 import operator
-=======
 import random
->>>>>>> insert_key_gates
 
 # -r 10 -F faults -l log -N
 HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
