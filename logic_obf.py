@@ -9,7 +9,7 @@ import pathlib
 import operator
 
 # -r 10 -F faults -l log -N
-HOPE_OPTS = ['./hope/hope', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
+HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
 
 INPUT_RE = re.compile('^INPUT\((?P<inputs>\w*)\)', flags=re.A | re.M)
 OUTPUT_RE = re.compile('^OUTPUT\((?P<outputs>\w*)\)', flags=re.A | re.M)
@@ -85,39 +85,61 @@ class Fault:
     @staticmethod
     def get_faults(bench, netlist):
         faults = get_hope_faults(netlist)
-        faultLines = faults.split('/n')
+        faultLines = faults.split('\n')
+
+        atZeroFaults = { "0": -1 }
+        atOneFaults = { "0": -1 }
 
         # go through each line at sum up the total faults we find
         for line in faultLines:
+            if line == "":
+                break
+
             splitLine = line.split()
+          #  print(splitLine)
            
             # we want to skip the header lines and output lines
             if splitLine[0] == "test":
                 continue
-            elif bench.outputs.count(splitLine[1]) > 0:
+            elif bench.outputs.count(splitLine[0]) > 0:
                 continue
             elif splitLine[2] == "*":
-                if splitLine[1] == "//0":
-                    atZeroFaults[splitLine[0]] += 1
-                else:
-                    atOneFaults[splitLine[0]] += 1
+                if splitLine[1] == "/0:":
+                    if atZeroFaults.get(splitLine[0]):
+                        atZeroFaults[splitLine[0]] += 1
+                    else:
+                        atZeroFaults[splitLine[0]] = 1
+                elif splitLine[1] == "/1:":
+                    if atOneFaults.get(splitLine[0]):
+                        atOneFaults[splitLine[0]] += 1
+                    else:
+                        atOneFaults[splitLine[0]] = 1
 
-        # now we sort them
-        sortedZeroFaults = sorted(atZeroFaults.items(), key=operator.itemgetter(1))
-        sortedOneFaults = sorted(atOneFaults.items(), key=operator.itemgetter(1))
+        # now we sort them (from greatest to least prevalence)
+        #sortedZeroFaults = sorted(atZeroFaults.items(), key=operator.itemgetter(1), reverse = True)
+        #sortedOneFaults = sorted(atOneFaults.items(), key=operator.itemgetter(1), reverse = True)
+       
+        sortedZeroFaults = dict(sorted(atZeroFaults.items(), key=lambda item: item[1], reverse = True))
+        sortedOneFaults = dict(sorted(atOneFaults.items(), key=lambda item: item[1], reverse = True))
 
-        print(sortedZeroFaults)
-        print(sortedOneFaults)
+        # now we return the list from top to bottom of the most prevalent faults
+        atZeroKeys = []
+        atOneKeys = []
 
-        return Fault(self, atZeroFaults, atOneFaults)
+        for key in sortedZeroFaults:
+            atZeroKeys.append(key)
+        for key in sortedOneFaults:
+            atOneKeys.append(key)
+
+        return Fault(atZeroKeys, atOneKeys)
 
     def __init__(self, atZeroFaults, atOneFaults):
         self.atZeroFaults = atZeroFaults
         self.atOneFaults = atOneFaults
 
     def debug_print(self):
-        print(atZeroFaults)
-        print(atOneFaults)
+        print(self.atZeroFaults)
+        print(self.atOneFaults)
 
 # Bench - class to represent bench netlist
 # ----------
