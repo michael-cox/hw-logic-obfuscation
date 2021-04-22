@@ -51,13 +51,12 @@ class LogicOp:
             }
 
     def __init__(self, assignee, operation, operands):
-        self.assignee = assignee.replace('gat', '')
+        self.assignee = assignee
         self.operation = LogicOp.bench_to_op(operation)
-        self.operands = [op.replace('gat', '') for op in operands]
+        self.operands = operands
 
     def to_bench(self):
-        operands = [s + 'gat' for s in self.operands]
-        return LogicOp.__bench_format.format(self.assignee + 'gat', LogicOp.op_to_bench(self.operation), ', '.join(operands))
+        return LogicOp.__bench_format.format(self.assignee, LogicOp.op_to_bench(self.operation), ', '.join(self.operands))
 
     @staticmethod
     def bench_to_op(op):
@@ -76,7 +75,7 @@ class LogicOp:
         if self.operation != 2:
             module_name += str(len(self.operands))
 
-        operands = [self.assignee] + self.operands
+        operands = [self.assignee.replace('gat', '')] + [op.replace('gat', '') for op in self.operands]
         if self.operation == 5:
             operands = ['CK'] + operands
 
