@@ -9,6 +9,8 @@ import pathlib
 import operator
 import random
 import itertools
+import math
+import copy
 
 # -r 10 -F faults -l log -N
 HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
@@ -403,16 +405,25 @@ def test_hamming(netlist, input_bits, correctKey):
 if __name__ == '__main__':
     args = parse_args()
     random.seed()
+    hammings = {}
 
     bench = Bench.from_file(args.input_netlist)
     fault = Fault.get_faults(bench, args.input_netlist)
-    bench.insert_key_gates(fault.atZeroFaults, 10, 0)
-    bench.insert_key_gates(fault.atOneFaults, 10, 1)
-    print('key = {}'.format(bench.key))
-    if args.bench_out:
-        bench.write_to_file(args.bench_out)
-        hammingResult = test_hamming(args.bench_out, len(bench.inputs) - len(bench.key), bench.key)
-        print("HAMMING = " + str(hammingResult))
+    keys = {}
+
+    for num_keybits in range(math.floor(len(bench.inputs)/2),len(bench.inputs)):
+        testbench = copy.deepcopy(bench)
+        testbench.insert_key_gates(fault.atZeroFaults, math.floor(num_keybits/2), 0)
+        testbench.insert_key_gates(fault.atOneFaults, math.ceil(num_keybits/2), 1)
+        keys[num_keybits] = testbench.key
+        if args.bench_out:
+            testbench.write_to_file(args.bench_out)
+            hammingResult = test_hamming(args.bench_out, len(testbench.inputs) - len(testbench.key), testbench.key)
+            hammings[num_keybits] = hammingResult
+
+    sorted_hammings = [key for key in dict(sorted(hammings.items(), key=lambda item: item[1], reverse = True))]
+    print('Best Hamming @ {} key bits: {}'.format(sorted_hammings[0], hammings[sorted_hammings[0]]))
+    print('key = {}'.format(keys[sorted_hammings[0]]))
 
     vmod = VerilogModule.from_bench(bench)
     if args.verilog_out:
