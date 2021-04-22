@@ -284,7 +284,7 @@ class VerilogModule:
             print(VerilogModule.wire_format.format(wires=','.join(self.wires)), file=f)
             print(file=f)
 
-            op_counter = {0:0,1:0,2:0,3:0,4:0,5:0}
+            op_counter = {0:0,1:0,2:0,3:0,4:0,5:0,7:0,8:0}
             for op in self.ops:
                 print(op.to_verilog(op_counter[op.operation]), file=f)
                 op_counter[op.operation] += 1
