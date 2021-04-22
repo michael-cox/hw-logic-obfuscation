@@ -6,9 +6,10 @@ import sys
 import os
 import re
 import pathlib
+import operator
 
-# -s 500 -r 10 -F faults -l log -U undetected_faults
-HOPE_OPTS = ['./hope/hope', '-s', '500', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
+# -r 10 -F faults -l log -N
+HOPE_OPTS = ['./hope/hope', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
 
 INPUT_RE = re.compile('^INPUT\((?P<inputs>\w*)\)', flags=re.A | re.M)
 OUTPUT_RE = re.compile('^OUTPUT\((?P<outputs>\w*)\)', flags=re.A | re.M)
@@ -78,6 +79,45 @@ class LogicOp:
             label = LogicOp.op_to_bench(self.operation),
             count = counter,
             operands = ','.join(operands))
+
+class Fault:
+    
+    @staticmethod
+    def get_faults(bench, netlist):
+        faults = get_hope_faults(netlist)
+        faultLines = faults.split('/n')
+
+        # go through each line at sum up the total faults we find
+        for line in faultLines:
+            splitLine = line.split()
+           
+            # we want to skip the header lines and output lines
+            if splitLine[0] == "test":
+                continue
+            elif bench.outputs.count(splitLine[1]) > 0:
+                continue
+            elif splitLine[2] == "*":
+                if splitLine[1] == "//0":
+                    atZeroFaults[splitLine[0]] += 1
+                else:
+                    atOneFaults[splitLine[0]] += 1
+
+        # now we sort them
+        sortedZeroFaults = sorted(atZeroFaults.items(), key=operator.itemgetter(1))
+        sortedOneFaults = sorted(atOneFaults.items(), key=operator.itemgetter(1))
+
+        print(sortedZeroFaults)
+        print(sortedOneFaults)
+
+        return Fault(self, atZeroFaults, atOneFaults)
+
+    def __init__(self, atZeroFaults, atOneFaults):
+        self.atZeroFaults = atZeroFaults
+        self.atOneFaults = atOneFaults
+
+    def debug_print(self):
+        print(atZeroFaults)
+        print(atOneFaults)
 
 # Bench - class to represent bench netlist
 # ----------
@@ -219,10 +259,12 @@ def get_hope_faults(netlist):
     error('Hope found no faults.')
     exit(-1)
 
+
 if __name__ == '__main__':
     args = parse_args()
 
     bench = Bench.from_file(args.input_netlist)
+    fault = Fault.get_faults(bench, args.input_netlist)
     if args.bench_out:
         bench.write_to_file(args.bench_out)
 
