@@ -154,6 +154,7 @@ class Fault:
 # ops - list of LogicOp's in order
 class Bench:
 
+    boiler_format = '# {name}'
     input_format = 'INPUT({gate})'
     output_format = 'OUTPUT({gate})'
 
@@ -190,6 +191,7 @@ class Bench:
 
     def write_to_file(self, file):
         with open(file, 'w') as f:
+            print(Bench.boiler_format.format(name=self.name), file=f)
             for gate in self.inputs:
                 print(Bench.input_format.format(gate=gate), file=f)
             for gate in self.outputs:
