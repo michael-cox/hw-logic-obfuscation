@@ -368,7 +368,6 @@ def get_hamming_distance(correct_output, cipher_outputs):
 # key = the valid key
 def test_hamming(netlist, input_bits, correctKey):
     inputValue = random.randrange(0, (2 ** input_bits) - 1)
-    keyValue = int(correctKey, 2)
     inputString = bin(inputValue).replace("0b", "").zfill(input_bits)
 
     # generate set of keys
@@ -376,9 +375,10 @@ def test_hamming(netlist, input_bits, correctKey):
 
     testFile = open("testbench", "w")
     testFile.write("1: " + inputString + correctKey + "\n")
-    
-    for i in itertools.chain(range(2, keyValue), range(keyValue + 1, 2 ** len(correctKey))):
-        keyString = bin(i).replace("0b", "").zfill(len(correctKey))
+
+    for i in range(2, 200):
+        keyValue = random.randrange(0, (2 ** len(correctKey)) - 1)
+        keyString = bin(keyValue).replace("0b", "").zfill(len(correctKey))
         testFile.write(str(i) + ": " + inputString + keyString + "\n")
 
     testFile.close()
@@ -394,6 +394,7 @@ def test_hamming(netlist, input_bits, correctKey):
 
     logFile = open("resultlog", "r")
     logText = logFile.read()
+    logFile.close()
     # get responses and remove the correct key output
     cipher_outputs = reggie.findall(logText)
     correctOutput = cipher_outputs.pop(0)
