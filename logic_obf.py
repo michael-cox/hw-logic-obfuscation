@@ -155,6 +155,7 @@ class Fault:
 # ops - list of LogicOp's in order
 class Bench:
 
+    boiler_format = '# {name}'
     input_format = 'INPUT({gate})'
     output_format = 'OUTPUT({gate})'
 
@@ -191,6 +192,7 @@ class Bench:
 
     def write_to_file(self, file):
         with open(file, 'w') as f:
+            print(Bench.boiler_format.format(name=self.name), file=f)
             for gate in self.inputs:
                 print(Bench.input_format.format(gate=gate), file=f)
             for gate in self.outputs:
@@ -219,9 +221,9 @@ class Bench:
                     self.key += '1'
             elif stuck_at == 1:
                 if new_gate_op == "XOR":
-                    self.key += '1'
-                else:
                     self.key += '0'
+                else:
+                    self.key += '1'
 
 
             new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
