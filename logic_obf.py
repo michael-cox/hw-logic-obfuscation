@@ -8,6 +8,7 @@ import re
 import pathlib
 import operator
 import random
+import itertools
 
 # -r 10 -F faults -l log -N
 HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
@@ -361,20 +362,20 @@ def get_hamming_distance(correct_output, cipher_outputs):
 # -averages the hemming distance
 # netlist = path to netlist
 # key = the valid key
-def test_hamming(netlist, input_bits, keyString):
+def test_hamming(netlist, input_bits, correctKey):
     inputValue = random.randrange(0, (2 ** input_bits) - 1)
-    keyValue = int(keyString, 2)
+    keyValue = int(correctKey, 2)
     inputString = bin(inputValue).replace("0b", "").zfill(input_bits)
 
     # generate set of keys
-    keys = { keyString }
+    keys = { correctKey }
 
     testFile = open("testbench", "w")
-    testFile.write("1: " + inputString + keyString + "\n")
+    testFile.write("1: " + inputString + correctKey + "\n")
     
-    for i in range(2, keyValue) + range(keyValue + 1, 2 ** len(key))
-        keyString = bin(i).replace("0b", "").zfill(len(key))
-        testFile.write(i + ": " + inputString + keyString + "\n")
+    for i in itertools.chain(range(2, keyValue), range(keyValue + 1, 2 ** len(correctKey))):
+        keyString = bin(i).replace("0b", "").zfill(len(correctKey))
+        testFile.write(str(i) + ": " + inputString + keyString + "\n")
 
     testFile.close()
 
@@ -408,6 +409,8 @@ if __name__ == '__main__':
     print('key = {}'.format(bench.key))
     if args.bench_out:
         bench.write_to_file(args.bench_out)
+        hammingResult = test_hamming(args.bench_out, len(bench.inputs), bench.key)
+        print("HAMMING = " + hammingResult)
 
     vmod = VerilogModule.from_bench(bench)
     if args.verilog_out:
