@@ -293,6 +293,50 @@ def get_hamming_distance(correct_output, cipher_outputs):
         big_sum += little_sum
     return big_sum / (len(correct_output) * len(cipher_outputs))
 
+# need function that 
+# -creates test file of base input + generated keys
+# -runs hope with test file
+# ./hope/hope -f [blank file] -t [generated file] [benchfile]
+# -saves correct output then iterates through the "wrong" outputs
+# -averages the hemming distance
+# netlist = path to netlist
+# key = the valid key
+def test_hamming(netlist, input_bits, keyString):
+    inputValue = random.randrange(0, (2 ** input_bits) - 1)
+    keyValue = int(keyString, 2)
+    inputString = bin(inputValue).replace("0b", "").zfill(input_bits)
+
+    # generate set of keys
+    keys = { keyString }
+
+    testFile = open("testbench", "w")
+    testFile.write("1: " + inputString + keyString + "\n")
+    
+    for i in range(2, keyValue) + range(keyValue + 1, 2 ** len(key))
+        keyString = bin(i).replace("0b", "").zfill(len(key))
+        testFile.write(i + ": " + inputString + keyString + "\n")
+
+    testFile.close()
+
+    # create blank fault file
+    # TODO: cleanup files
+    subprocess.run(["touch", "fakefaults"])
+
+    hope_args = [ "./hope/hope", "-f", "fakefaults", "-t", "testbench", "-l", "resultlog", netlist]
+    hope_results = subprocess.run(hope_args, capture_output = True)
+
+    reggie = re.compile("([01]*)\s*0 faults detected", flags = re.A)
+
+    logFile = open("resultlog", "r")
+    logText = logFile.read()
+    # get responses and remove the correct key output
+    cipher_outputs = reggie.findall(logText)
+    correctOutput = cipher_outputs.pop(0)
+
+    # TODO: cleanup files
+    return get_hamming_distance(correctOutput, cipher_outputs)
+
+
 if __name__ == '__main__':
     args = parse_args()
 
