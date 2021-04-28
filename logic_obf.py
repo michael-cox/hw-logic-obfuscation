@@ -90,7 +90,8 @@ class LogicOp:
             operands = ','.join(operands))
 
 class Fault:
-    
+
+    # Initially creates the Fault class that includes the @0 list and the @1 list
     @staticmethod
     def get_faults(bench, netlist):
         faults = get_hope_faults(netlist)
@@ -114,6 +115,7 @@ class Fault:
                 continue
             elif splitLine[2] == "*":
                 if splitLine[1] == "/0:":
+                    # we use a dictionary method to uniquely key each signal and input with the total count of occurences
                     if atZeroFaults.get(splitLine[0]):
                         atZeroFaults[splitLine[0]] += 1
                     else:
@@ -125,9 +127,6 @@ class Fault:
                         atOneFaults[splitLine[0]] = 1
 
         # now we sort them (from greatest to least prevalence)
-        #sortedZeroFaults = sorted(atZeroFaults.items(), key=operator.itemgetter(1), reverse = True)
-        #sortedOneFaults = sorted(atOneFaults.items(), key=operator.itemgetter(1), reverse = True)
-       
         sortedZeroFaults = dict(sorted(atZeroFaults.items(), key=lambda item: item[1], reverse = True))
         sortedOneFaults = dict(sorted(atOneFaults.items(), key=lambda item: item[1], reverse = True))
 
@@ -362,18 +361,12 @@ def get_hamming_distance(correct_output, cipher_outputs):
         big_sum += little_sum
     return big_sum / (len(correct_output) * len(cipher_outputs))
 
-# need function that 
-# -creates test file of base input + generated keys
-# -runs hope with test file
-# ./hope/hope -f [blank file] -t [generated file] [benchfile]
-# -saves correct output then iterates through the "wrong" outputs
-# -averages the hemming distance
-# netlist = path to netlist
-# key = the valid key
+# test_hamming - generate incorrect keys and simulate using HOPE
 def test_hamming(netlist, input_bits, correctKey):
     inputValue = random.randrange(0, (2 ** (input_bits)) - 1)
     inputString = bin(inputValue).replace("0b", "").zfill(input_bits)
-
+    
+    # create a test input file to pass into HOPE
     testFile = open("testbench", "w")
     testFile.write("1: " + inputString + correctKey + "\n")
 
@@ -385,9 +378,9 @@ def test_hamming(netlist, input_bits, correctKey):
     testFile.close()
 
     # create blank fault file
-    # TODO: cleanup files
     subprocess.run(["touch", "fakefaults"])
 
+    # run HOPE with our test input file, our blank fault file, and our new netlist
     hope_args = [ "./hope/hope", "-f", "fakefaults", "-t", "testbench", "-l", "resultlog", netlist]
     hope_results = subprocess.run(hope_args, capture_output = True)
 
@@ -400,7 +393,6 @@ def test_hamming(netlist, input_bits, correctKey):
     cipher_outputs = reggie.findall(logText)
     correctOutput = cipher_outputs.pop(0)
 
-    # TODO: cleanup files
     return get_hamming_distance(correctOutput, cipher_outputs)
 
 
