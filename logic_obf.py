@@ -453,12 +453,16 @@ if __name__ == '__main__':
     bench.insert_key_gates(fault.atZeroFaults, sorted_hammings[0], 0)
     bench.insert_key_gates(fault.atOneFaults, sorted_hammings[0], 1)
     print('Key: {}'.format(bench.key))
+    print()
 
     if args.bench_out:
         print('Writing output bench to {}...'.format(args.bench_out))
         bench.write_to_file(args.bench_out)
+
     if args.verilog_out:
+        if(args.bench_out): print()
         vmod = VerilogModule.from_bench(bench)
         print('Writing output Verilog Module to {}...'.format(args.verilog_out))
+        print('To use this Verilog Module, you will need to import lib.v from the ISCAS directory provided.')
         vmod.write_to_file(args.verilog_out)
     
