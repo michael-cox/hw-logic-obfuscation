@@ -11,6 +11,7 @@ import random
 import itertools
 import math
 import copy
+import tabulate
 
 # -r 10 -F faults -l log -N
 HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
@@ -321,6 +322,7 @@ def parse_args():
     parser.add_argument('input_netlist', help='the input netlist .bench file')
     parser.add_argument('-V', '--verilog', dest='verilog_out', help='specify an output verilog .v file')
     parser.add_argument('-b', '--bench', dest='bench_out', help='specify an output netlist .bench file')
+    parser.add_argument('-n', '--nhammings', dest='num_hamm', type=int, default=1, help='specify how many keygate/hamming results to print. if the number specified is greater than the total number of possible hammings, print the max we can.')
     args = parser.parse_args()
     if 'verilog_out' not in args and 'bench_out' not in args:
         error('At least one output file must be specified.')
@@ -402,6 +404,39 @@ def test_hamming(netlist, input_bits, correctKey):
     return get_hamming_distance(correctOutput, cipher_outputs)
 
 
+def get_best_hamming(bench, hammings):
+    for num_keybits in range(math.floor(len(bench.inputs)/2),len(bench.inputs)):
+        testbench = copy.deepcopy(bench)
+        testbench.insert_key_gates(fault.atZeroFaults, num_keybits, 0)
+        testbench.insert_key_gates(fault.atOneFaults, num_keybits, 1)
+        keys[num_keybits] = testbench.key
+        out_bench = 'tmp_bench.bench'
+        testbench.write_to_file(out_bench)
+        hammingResult = test_hamming(out_bench, len(testbench.inputs) - len(testbench.key), testbench.key)
+        hammings[num_keybits] = abs(hammingResult - 0.5)
+
+    os.remove(out_bench)
+    sorted_hammings = [key for key in dict(sorted(hammings.items(), key=lambda item: item[1]))]
+    for key, hamm in hammings.items():
+        hammings[key] = hamm + 0.5
+
+    return sorted_hammings
+
+def print_best_hammings(hammings, sorted_hammings, num_hammings):
+    if num_hammings > len(sorted_hammings):
+        num_hammings = len(sorted_hammings)
+
+    best_hamm_table = []
+    for hamming in range(num_hammings):
+        best_hamm_table.append([sorted_hammings[hamming],
+            hammings[sorted_hammings[hamming]] * 100])
+
+    print(tabulate.tabulate(best_hamm_table, headers=['# Keybits', 'Hamming Distance']))
+    print()
+
+
+
+
 if __name__ == '__main__':
     args = parse_args()
     random.seed()
@@ -411,27 +446,19 @@ if __name__ == '__main__':
     fault = Fault.get_faults(bench, args.input_netlist)
     keys = {}
 
-    for num_keybits in range(math.floor(len(bench.inputs)/2),len(bench.inputs)):
-        testbench = copy.deepcopy(bench)
-        testbench.insert_key_gates(fault.atZeroFaults, math.floor(num_keybits/2), 0)
-        testbench.insert_key_gates(fault.atOneFaults, math.ceil(num_keybits/2), 1)
-        keys[num_keybits] = testbench.key
-        if args.bench_out:
-            testbench.write_to_file(args.bench_out)
-            hammingResult = test_hamming(args.bench_out, len(testbench.inputs) - len(testbench.key), testbench.key)
-            hammings[num_keybits] = hammingResult
+    sorted_hammings = get_best_hamming(bench, hammings)
+    
+    print_best_hammings(hammings, sorted_hammings, args.num_hamm)
 
-    sorted_hammings = [key for key in dict(sorted(hammings.items(), key=lambda item: item[1], reverse = True))]
-    print('Best Hamming @ {} key bits: {}'.format(sorted_hammings[0], hammings[sorted_hammings[0]]))
-    print('key = {}'.format(keys[sorted_hammings[0]]))
+    bench.insert_key_gates(fault.atZeroFaults, sorted_hammings[0], 0)
+    bench.insert_key_gates(fault.atOneFaults, sorted_hammings[0], 1)
+    print('Key: {}'.format(bench.key))
 
-    bench.insert_key_gates(fault.atZeroFaults, math.floor(num_keybits/2), 0)
-    bench.insert_key_gates(fault.atOneFaults, math.ceil(num_keybits/2), 1)
-
-    vmod = VerilogModule.from_bench(bench)
+    if args.bench_out:
+        print('Writing output bench to {}...'.format(args.bench_out))
+        bench.write_to_file(args.bench_out)
     if args.verilog_out:
+        vmod = VerilogModule.from_bench(bench)
+        print('Writing output Verilog Module to {}...'.format(args.verilog_out))
         vmod.write_to_file(args.verilog_out)
     
-        
-    # fault.debug_print()
-    # print(hope_out)
