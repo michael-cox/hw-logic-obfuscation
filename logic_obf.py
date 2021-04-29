@@ -13,13 +13,15 @@ import math
 import copy
 import tabulate
 
-# -r 10 -F faults -l log -N
+# Options for HOPE
 HOPE_OPTS = ['./hope/hope', '-s', '100', '-r', '10', '-F', 'faults', '-l', 'log', '-N']
 
+# Regular Expressions for parsing the bench file
 INPUT_RE = re.compile('^INPUT\((?P<inputs>\w*)\)', flags=re.A | re.M)
 OUTPUT_RE = re.compile('^OUTPUT\((?P<outputs>\w*)\)', flags=re.A | re.M)
 OP_RE = re.compile('^(\w*)\s*=\s*(\w*)\((.*)\)', flags = re.M | re.A)
 
+# The gates that need to be added to a Verilog module if it contains a DFF
 DFF_GATES = ['VDD', 'CK']
 
 
@@ -29,8 +31,11 @@ DFF_GATES = ['VDD', 'CK']
 # operation - string of the operation (e.g. and, nand)
 # operands - list of gate parameters
 class LogicOp:
+    # Format strings for printing
     __bench_format = '{} = {}({})'
     __verilog_format = '  {module:<3} {mod_name}_{count}({gates});'
+
+    # Various operation name translations for the different formats
     __to_op_dict = {
             'AND' : 0,
             'OR' : 1,
@@ -59,6 +64,7 @@ class LogicOp:
         self.operation = LogicOp.bench_to_op(operation)
         self.operands = operands
 
+    # Conversion to bench formatted string
     def to_bench(self):
         return LogicOp.__bench_format.format(self.assignee, LogicOp.op_to_bench(self.operation), ', '.join(self.operands))
 
@@ -74,6 +80,7 @@ class LogicOp:
     def op_to_bench(op):
         return LogicOp.__to_bench_dict[op]
 
+    # Conversion to Verilog formatted string
     def to_verilog(self, counter):
         module_name = LogicOp.op_to_verilog(self.operation)
         if self.operation != 2:
@@ -157,10 +164,12 @@ class Fault:
 # ops - list of LogicOp's in order
 class Bench:
 
+    # Format strings for printing
     boiler_format = '# {name}'
     input_format = 'INPUT({gate})'
     output_format = 'OUTPUT({gate})'
 
+    # Create a Bench from a netlist file
     @staticmethod
     def from_file(netlist):
         with open(netlist, 'r') as data:
@@ -208,14 +217,19 @@ class Bench:
         if len(wires) < num_keybits:
             error('Invalid number of key bits')
 
+        # Insert num_keybits number of gates
         for i in range(num_keybits):
 
+            # Split the G37gat->G38gat format
             wire = wires[i].split("->", 1)
+
+            # Create and insert new gates for key bit and new signal
             key_input = 'K' + str(len(self.key)) + "gat"
             self.inputs.append(key_input)
             new_signal = 'GA' + str(len(self.signals)) + "gat"
             self.signals.append(new_signal)
 
+            # Determine the key bit's correct value
             new_gate_op = "XOR" if random.randrange(2) == 1 else "XNOR"
             if stuck_at == 0:
                 if new_gate_op == "XOR":
@@ -229,10 +243,12 @@ class Bench:
                     self.key += '1'
 
 
+            # Construct a new operation
             new_op = LogicOp(new_signal, new_gate_op, [wire[0], key_input])
             
-            #wire = [G16, G22]
             index_to_insert = -1
+
+            # Case 1: G37gat->G38gat
             if len(wire) >= 2 and wire[0] not in self.changed_signals:
                 for op_index, op in enumerate(self.ops):
                     if op.assignee == wire[1]:
@@ -240,6 +256,8 @@ class Bench:
                         op.operands[index] = new_signal
                         if index_to_insert == -1:
                             index_to_insert = op_index
+
+            # Case 2: G38gat
             else:
                 for op_index, op in enumerate(self.ops):
                     if wire[0] in op.operands:
@@ -251,15 +269,6 @@ class Bench:
             if(index_to_insert != -1):
                 self.ops.insert(index_to_insert, new_op)
 
-
-
-
-        # insert new key gates as inputs
-        # create new wires for each insertion
-        # randomly select an XOR or XNOR gate for insertion
-
-
-
     def debug_print(self):
         print('INPUTS: {}'.format(str(self.inputs)))
         print('OUTPUTS: {}'.format(str(self.outputs)))
@@ -267,7 +276,12 @@ class Bench:
         print('OPS:')
         for op in self.ops: print(LogicOp.to_bench(op))
             
+# VerilogModule
+# -------------
+# Verilog format of a Bench class.
 class VerilogModule:
+    
+    # Format strings for printing
     start_format = 'module {name}({ports});'
     input_format = 'input {inputs};'
     output_format = 'output {outputs};'
@@ -299,6 +313,7 @@ class VerilogModule:
 
             print(VerilogModule.end_boiler, file=f)
 
+    # Construct from a bench
     @staticmethod
     def from_bench(bench):
         inputs = []
@@ -395,8 +410,10 @@ def test_hamming(netlist, input_bits, correctKey):
 
     return get_hamming_distance(correctOutput, cipher_outputs)
 
-
+# get_best_hamming - calculates the number of key gates that yields the best hamming distance
 def get_best_hamming(bench, hammings):
+
+    # test each number of key gates from n = floor(#inputs/2) to #inputs
     for num_keybits in range(math.floor(len(bench.inputs)/2),len(bench.inputs)):
         testbench = copy.deepcopy(bench)
         testbench.insert_key_gates(fault.atZeroFaults, num_keybits, 0)
@@ -412,6 +429,7 @@ def get_best_hamming(bench, hammings):
 
     return sorted_hammings
 
+# print_best_hammings - tabulate and print the best hammings results
 def print_best_hammings(hammings, sorted_hammings, num_hammings):
     if num_hammings > len(sorted_hammings):
         num_hammings = len(sorted_hammings)
@@ -424,27 +442,33 @@ def print_best_hammings(hammings, sorted_hammings, num_hammings):
     print(tabulate.tabulate(best_hamm_table, headers=['# Keybits', 'Hamming Distance']))
     print()
 
-
-
-
 if __name__ == '__main__':
     args = parse_args()
     random.seed()
     hammings = {}
-
-    bench = Bench.from_file(args.input_netlist)
-    fault = Fault.get_faults(bench, args.input_netlist)
     keys = {}
 
+    # Parse the bench
+    bench = Bench.from_file(args.input_netlist)
+
+    # Calculate the testability/fault locations
+    fault = Fault.get_faults(bench, args.input_netlist)
+
+    # Optimize the hamming distances as a function of number of key gates
     sorted_hammings = get_best_hamming(bench, hammings)
     
+    # Print the results
     print_best_hammings(hammings, sorted_hammings, args.num_hamm)
 
+    # Insert the best number of key gates in our bench
     bench.insert_key_gates(fault.atZeroFaults, sorted_hammings[0], 0)
     bench.insert_key_gates(fault.atOneFaults, sorted_hammings[0], 1)
+
+    # Print the correct key
     print('Key: {}'.format(bench.key))
     print()
 
+    # Write the output file(s)
     if args.bench_out:
         print('Writing output bench to {}...'.format(args.bench_out))
         bench.write_to_file(args.bench_out)
