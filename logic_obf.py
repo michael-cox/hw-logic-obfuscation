@@ -417,8 +417,6 @@ def get_best_hamming(bench, hammings):
 
     os.remove(out_bench)
     sorted_hammings = [key for key in dict(sorted(hammings.items(), key=lambda item: item[1]))]
-    for key, hamm in hammings.items():
-        hammings[key] = hamm + 0.5
 
     return sorted_hammings
 
@@ -429,7 +427,7 @@ def print_best_hammings(hammings, sorted_hammings, num_hammings):
     best_hamm_table = []
     for hamming in range(num_hammings):
         best_hamm_table.append([sorted_hammings[hamming],
-            hammings[sorted_hammings[hamming]] * 100])
+            '50% +/- {:.2f}%'.format(hammings[sorted_hammings[hamming]] * 100)])
 
     print(tabulate.tabulate(best_hamm_table, headers=['# Keybits', 'Hamming Distance']))
     print()
