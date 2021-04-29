@@ -8,7 +8,7 @@ The only required package is tabulate, which can be installed with:
 ```pip install tabulate```
 
 ## Usage
-```sh
+```
 usage: logic_obf.py [-h] [-V VERILOG_OUT] [-b BENCH_OUT] [-n NUM_HAMM] input_netlist
 
 Process command line arguments
